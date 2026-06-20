@@ -93,7 +93,7 @@ all: tc48emu lib sharedlib $(TOOLS_EXES)
 tc48emu: $(TC48_EMU_LIB)
 
 $(TC48_EMU_LIB):
-	$(MAKE) -C $(TC48_EMU_DIR) libtc48emu
+	$(MAKE) -C $(TC48_EMU_DIR) libtc48emu FEATURES=none
 
 lib:       $(TOBJ_LIB_STATIC)
 sharedlib: $(TOBJ_LIB_SHARED)

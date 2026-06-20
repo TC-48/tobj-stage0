@@ -46,7 +46,12 @@ CSTD       := -std=c11
 WARNINGS   := -Wall -Wextra -Werror=implicit-fallthrough -Wno-old-style-declaration
 PIC_CFLAGS := -fPIC
 
-COMMON_CFLAGS := $(CSTD) $(WARNINGS) -I$(INCLUDE_DIR) -I$(DEPS_DIR)/tc48-emu/include -I$(DEPS_DIR)/tc48-emu/deps
+DEPS_INCLUDES :=                   \
+	-I$(DEPS_DIR)/tc48-emu/include \
+	-I$(DEPS_DIR)/tc48-emu/deps    \
+	-I$(DEPS_DIR)
+
+COMMON_CFLAGS := $(CSTD) $(WARNINGS) -I$(INCLUDE_DIR) $(DEPS_INCLUDES)
 
 ifeq ($(PLATFORM),windows)
 	CMD_MKDIR_P = powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(subst /,\,$(1))'"

@@ -1,3 +1,6 @@
 [submodule "deps/tc48-emu"]
 	path = deps/tc48-emu
 	url = https://github.com/TC-48/tc48-emu
+[submodule "deps/vector"]
+	path = deps/vector
+	url = https://github.com/RolandMarchand/vector.h

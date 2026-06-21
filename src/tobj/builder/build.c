@@ -30,7 +30,7 @@ static void push_header(tobj_trytes* out, const tobj_header* header) {
     push_half(out, header->string_table_off);
 
     push_half(out, header->section_count);
-    push_half(out, header->sections_table_off);
+    push_half(out, header->section_table_off);
 
     push_half(out, header->symbol_count);
     push_half(out, header->symbol_table_off);
@@ -81,7 +81,7 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     tc48_half string_table_size = 0;
     for (size_t i = 0; i < num_strings; ++i) {
         string_offsets[i] = string_table_size;
-    
+
         string_table_size += TC48_HALF_TRYTES; // length
         string_table_size += bldr->strings.begin[i].len;
     }
@@ -92,16 +92,16 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     }
 
     tc48_half off = TOBJ_HEADER_SIZE_TRYTES;
-    
+
     tc48_half string_table_off = off;
     off += string_table_size;
-    
-    tc48_half sections_table_off = off;
+
+    tc48_half section_table_off = off;
     off += num_sections * TOBJ_SECTION_SIZE_TRYTES;
-    
+
     tc48_half symbol_table_off = off;
     off += num_symbols * TOBJ_SYMBOL_SIZE_TRYTES;
-    
+
     tc48_half reloc_table_off = off;
     off += num_relocs * TOBJ_RELOC_SIZE_TRYTES;
 
@@ -118,16 +118,16 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     }
 
     tobj_header header = {
-        .magic              = TOBJ_MAGIC,
-        .version            = TOBJ_FORMAT_VERSION,
-        .string_count       = (tc48_half)num_strings,
-        .string_table_off   = string_table_off,
-        .section_count      = (tc48_half)num_sections,
-        .sections_table_off = sections_table_off,
-        .symbol_count       = (tc48_half)num_symbols,
-        .symbol_table_off   = symbol_table_off,
-        .reloc_count        = (tc48_half)num_relocs,
-        .reloc_table_off    = reloc_table_off,
+        .magic             = TOBJ_MAGIC,
+        .version           = TOBJ_FORMAT_VERSION,
+        .string_count      = (tc48_half)num_strings,
+        .string_table_off  = string_table_off,
+        .section_count     = (tc48_half)num_sections,
+        .section_table_off = section_table_off,
+        .symbol_count      = (tc48_half)num_symbols,
+        .symbol_table_off  = symbol_table_off,
+        .reloc_count       = (tc48_half)num_relocs,
+        .reloc_table_off   = reloc_table_off,
     };
 
     push_header(out, &header);

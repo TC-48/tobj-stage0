@@ -69,20 +69,18 @@ typedef struct tobj_reloc {
 
 #define TOBJ_HEADER_SIZE_TRYTES (9*TC48_HALF_TRYTES + 1)
 typedef struct tobj_header {
-    tc48_half  magic;              ///< Magic number identifying the file format (TOBJ_MAGIC)
-    tc48_tryte version;            ///< Version of the object file standard
+    tc48_half  magic;             ///< Magic number identifying the file format (TOBJ_MAGIC)
+    tc48_tryte version;           ///< Version of the object file standard
 
-    tc48_half  string_count;       ///< Total number of strings in the string table
-    tc48_half  string_table_off;   ///< File offset to the start of the string table
+    tc48_half  string_count;      ///< Total number of strings in the string table
+    tc48_half  string_table_off;  ///< File offset to the start of the string table
 
-    tc48_half  section_count;      ///< Total number of sections in the section table
-    tc48_half  sections_table_off; ///< File offset to the start of the sections table
+    tc48_half  section_count;     ///< Total number of sections in the section table
+    tc48_half  section_table_off; ///< File offset to the start of the sections table
 
-    tc48_half  symbol_count;       ///< Total number of symbols in the symbol table
-    tc48_half  symbol_table_off;   ///< File offset to the start of the symbol table
+    tc48_half  symbol_count;      ///< Total number of symbols in the symbol table
+    tc48_half  symbol_table_off;  ///< File offset to the start of the symbol table
 
-    tc48_half  reloc_count;        ///< Total number of relocations in the relocation table
-    tc48_half  reloc_table_off;    ///< File offset to the start of the relocation table
-
-    tc48_tryte data[];             ///< Flexible array member containing the actual raw data payload
+    tc48_half  reloc_count;       ///< Total number of relocations in the relocation table
+    tc48_half  reloc_table_off;   ///< File offset to the start of the relocation table
 } tobj_header;

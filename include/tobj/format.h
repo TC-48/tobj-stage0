@@ -30,6 +30,7 @@ typedef enum tobj_binding {
     TOBJ_BINDING_WEAK,   ///< Weak global binding (can be overridden by strong symbols)
 } tobj_binding;
 
+#define TOBJ_SECTION_SIZE_TRYTES (6*TC48_HALF_TRYTES)
 typedef struct tobj_header_section {
     tc48_half name_off;      ///< Offset into the string table for the section's name
 
@@ -41,6 +42,7 @@ typedef struct tobj_header_section {
     tc48_half sym_count;     ///< Number of symbols associated with this section
 } tobj_header_section;
 
+#define TOBJ_SYMBOL_SIZE_TRYTES (4*TC48_HALF_TRYTES + 1)
 typedef struct tobj_header_symbol {
     tc48_half  name_off;     ///< Offset into the string table for the symbol's name
     tc48_half  section_idx;  ///< Index of the section this symbol belongs to
@@ -57,6 +59,7 @@ typedef enum tobj_reloc_type {
     TOBJ_RELOC_REL, ///< relative to RIP
 } tobj_reloc_type;
 
+#define TOBJ_RELOC_SIZE_TRYTES (3*TC48_HALF_TRYTES + 1)
 typedef struct tobj_reloc {
     tc48_half  section_idx; ///< Section index within the relocation needs to be aplied
     tc48_half  offset;      ///< Offset within the section; see @ref section_idx
@@ -64,6 +67,7 @@ typedef struct tobj_reloc {
     tc48_tryte type;        ///< Type of relocation to apply; maps to @ref tobj_reloc_type
 } tobj_reloc;
 
+#define TOBJ_HEADER_SIZE_TRYTES (9*TC48_HALF_TRYTES + 1)
 typedef struct tobj_header {
     tc48_half  magic;              ///< Magic number identifying the file format (TOBJ_MAGIC)
     tc48_tryte version;            ///< Version of the object file standard

@@ -1,4 +1,7 @@
 #include <tobj/builder/defs.h>
+#include <tobj/format.h>
+
+#include <tc48/mem.h>
 
 typedef struct tobj_builder {
     tobj_bldr_strings  strings;
@@ -30,3 +33,6 @@ size_t tobj_bldr_add_symbol(tobj_builder* bldr, const tobj_bldr_symbol* sym);
 /// Add a relocation.
 void tobj_bldr_add_reloc(tobj_builder* bldr, tobj_bldr_reloc reloc);
 
+/// Build the final object file.
+/// out_header can be NULL
+tc48_memory* tobj_bldr_build(tobj_builder* bldr, tobj_header* out_header);

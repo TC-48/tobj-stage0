@@ -1,6 +1,8 @@
 # tools
 CC ?= cc
 AR ?= ar
+PY ?= python3
+
 BUILD ?= release
 
 # utils
@@ -39,7 +41,14 @@ BIN_DIR     := $(OUT_DIR)/bin
 TOBJ_LIB_NAME   := tobj
 TOBJ_LIB_STATIC := $(LIB_DIR)/lib$(TOBJ_LIB_NAME)$(STATIC_EXT)
 TOBJ_LIB_SHARED := $(LIB_DIR)/lib$(TOBJ_LIB_NAME)$(SHARED_EXT)
+TOOLCOMMON_LIB_NAME   := toolcommon
+TOOLCOMMON_LIB_STATIC := $(LIB_DIR)/lib$(TOOLCOMMON_LIB_NAME)$(STATIC_EXT)
 TC48_EMU_LIB    := $(TC48_EMU_DIR)/out/$(BUILD)/lib/libtc48emu.a
+
+TSCS_SCRIPT     := $(DEPS_DIR)/tscs-spec/scripts/gen-c-table.py
+TSCS_SPEC_JSON  := $(DEPS_DIR)/tscs-spec/spec.json
+TSCS_GEN_HEADER := $(INCLUDE_DIR)/tobj/gen/tscs.h
+TSCS_GEN_SOURCE := $(SRC_DIR)/tobj/gen/tscs.c
 
 # flags
 CSTD       := -std=c11
@@ -68,10 +77,12 @@ else
 endif
 
 # sources
-TOBJ_SRCS := $(call rwildcard,src/tobj,*.c)
+TOBJ_SRCS := $(call rwildcard,src/tobj,*.c) $(TSCS_GEN_SOURCE)
+TOOLCOMMON_SRCS := $(call rwildcard,src/toolcommon,*.c)
 
 TOBJ_OBJS_STATIC := $(patsubst %.c,$(OBJ_ROOT_DIR)/%.o,$(TOBJ_SRCS))
 TOBJ_OBJS_SHARED := $(patsubst %.c,$(OBJ_ROOT_DIR)/shared/%.o,$(TOBJ_SRCS))
+TOOLCOMMON_OBJS  := $(patsubst %.c,$(OBJ_ROOT_DIR)/%.o,$(TOOLCOMMON_SRCS))
 
 TOBJ_LINK_DEP := $(TOBJ_LIB_STATIC)
 
@@ -91,9 +102,9 @@ endif
 
 TOOLS_EXES := $(foreach tool,$(TOOL_NAMES),$(BIN_DIR)/$(tool)$(EXE_EXT))
 
-.PHONY: all clean install uninstall lib sharedlib tc48emu
+.PHONY: all clean install uninstall lib sharedlib tc48emu toolcommon
 
-all: tc48emu lib sharedlib $(TOOLS_EXES)
+all: tc48emu toolcommon lib sharedlib $(TOOLS_EXES)
 
 tc48emu: $(TC48_EMU_LIB)
 
@@ -102,8 +113,13 @@ $(TC48_EMU_LIB):
 
 lib:       $(TOBJ_LIB_STATIC)
 sharedlib: $(TOBJ_LIB_SHARED)
+toolcommon: $(TOOLCOMMON_LIB_STATIC)
 
 $(TOBJ_LIB_STATIC): $(TOBJ_OBJS_STATIC)
+	@$(call CMD_MKDIR_P,$(dir $@))
+	$(AR) rcs $@ $^
+
+$(TOOLCOMMON_LIB_STATIC): $(TOOLCOMMON_OBJS)
 	@$(call CMD_MKDIR_P,$(dir $@))
 	$(AR) rcs $@ $^
 
@@ -111,27 +127,34 @@ $(TOBJ_LIB_SHARED): $(TOBJ_OBJS_SHARED)
 	@$(call CMD_MKDIR_P,$(dir $@))
 	$(CC) -shared $^ $(LDFLAGS) -o $@
 
+$(TSCS_GEN_HEADER) $(TSCS_GEN_SOURCE) &: $(TSCS_SCRIPT) $(TSCS_SPEC_JSON)
+	@$(call CMD_MKDIR_P,$(dir $(TSCS_GEN_HEADER)))
+	@$(call CMD_MKDIR_P,$(dir $(TSCS_GEN_SOURCE)))
+	$(PY) $(TSCS_SCRIPT) $(TSCS_SPEC_JSON) --inc-path="<tobj/gen/tscs.h>" --out-c=$(TSCS_GEN_SOURCE) --out-h=$(TSCS_GEN_HEADER)
+
 define TOOL_RULE
 TOOL_SRCS_$(1) := $$(call rwildcard,src/tools/$(1),*.c)
 TOOL_OBJS_$(1) := $$(patsubst %.c,$$(OBJ_ROOT_DIR)/%.o,$$(TOOL_SRCS_$(1)))
 
-$$(BIN_DIR)/$(1)$$(EXE_EXT): $$(TOOL_OBJS_$(1)) $$(TOBJ_LINK_DEP) $$(TC48_EMU_LIB)
+ARGPARSE_SRC := $(DEPS_DIR)/argparse/argparse.c
+
+$$(BIN_DIR)/$(1)$$(EXE_EXT): $$(TOOL_OBJS_$(1)) $$(TOBJ_LINK_DEP) $$(TOOLCOMMON_LIB_STATIC) $$(TC48_EMU_LIB)
 	@$$(call CMD_MKDIR_P,$$(dir $$@))
-	$$(CC) $$(TOOL_OBJS_$(1)) $$(TOBJ_LINK_DEP) $$(TC48_EMU_LIB) $$(LDFLAGS) -o $$@
+	$$(CC) $$(TOOL_OBJS_$(1)) $$(TOBJ_LINK_DEP) $$(TOOLCOMMON_LIB_STATIC) $$(TC48_EMU_LIB) $$(ARGPARSE_SRC) $$(LDFLAGS) -o $$@
 endef
 
 $(foreach tool,$(TOOL_NAMES),$(eval $(call TOOL_RULE,$(tool))))
 
-ALL_C_SRCS := $(TOBJ_SRCS) $(foreach tool,$(TOOL_NAMES),$(TOOL_SRCS_$(tool)))
+ALL_C_SRCS := $(TOBJ_SRCS) $(TOOLCOMMON_SRCS) $(foreach tool,$(TOOL_NAMES),$(TOOL_SRCS_$(tool)))
 DEPS       := $(patsubst %.c,$(DEP_ROOT_DIR)/%.d,$(ALL_C_SRCS)) \
               $(patsubst %.c,$(DEP_ROOT_DIR)/shared/%.d,$(TOBJ_SRCS))
 
-$(OBJ_ROOT_DIR)/%.o: %.c
+$(OBJ_ROOT_DIR)/%.o: %.c $(TSCS_GEN_HEADER)
 	@$(call CMD_MKDIR_P,$(dir $@))
 	@$(call CMD_MKDIR_P,$(DEP_ROOT_DIR)/$(dir $<))
 	$(CC) $(CFLAGS) -MMD -MP -MF $(DEP_ROOT_DIR)/$*.d -c $< -o $@
 
-$(OBJ_ROOT_DIR)/shared/%.o: %.c
+$(OBJ_ROOT_DIR)/shared/%.o: %.c $(TSCS_GEN_HEADER)
 	@$(call CMD_MKDIR_P,$(dir $@))
 	@$(call CMD_MKDIR_P,$(DEP_ROOT_DIR)/shared/$(dir $<))
 	$(CC) $(CFLAGS) $(PIC_CFLAGS) -MMD -MP -MF $(DEP_ROOT_DIR)/shared/$*.d -c $< -o $@

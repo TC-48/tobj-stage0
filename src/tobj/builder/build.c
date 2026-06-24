@@ -50,7 +50,10 @@ static bool make_sorted_map(tobj_builder* bldr, section_info* secs, size_t** out
     size_t num_secs = VECTOR_SIZE(&bldr->sections);
 
     for (size_t i = 0; i < num_secs; ++i) secs[i] = (section_info) {0};
-    for (size_t i = 0; i < num_syms; ++i) secs[bldr->symbols.begin[i].section_idx].sym_count++;
+    for (size_t i = 0; i < num_syms; ++i) {
+        size_t sec = bldr->symbols.begin[i].section_idx;
+        if (sec < num_secs) secs[sec].sym_count++;
+    }
 
     tc48_half* map_pos = malloc(sizeof(tc48_half) * num_secs);
     size_t* map = malloc(sizeof(size_t) * num_syms);
@@ -63,8 +66,14 @@ static bool make_sorted_map(tobj_builder* bldr, section_info* secs, size_t** out
         map_pos[i] = secs[i].sym_start = offset;
         offset += secs[i].sym_count;
     }
-    for (size_t i = 0; i < num_syms; ++i)
-        map[map_pos[bldr->symbols.begin[i].section_idx]++] = i;
+    size_t undef_pos = offset;
+    for (size_t i = 0; i < num_syms; ++i) {
+        size_t sec = bldr->symbols.begin[i].section_idx;
+        if (sec < num_secs)
+            map[map_pos[sec]++] = i;
+        else
+            map[undef_pos++] = i;
+    }
 
     free(map_pos);
     *out_map = map;
@@ -75,8 +84,15 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     size_t num_strings = VECTOR_SIZE(&bldr->strings), num_sections = VECTOR_SIZE(&bldr->sections),
            num_symbols = VECTOR_SIZE(&bldr->symbols), num_relocs = VECTOR_SIZE(&bldr->relocs);
 
-    tc48_half* string_offsets   = malloc(sizeof(tc48_half) * num_strings);
-    section_info* section_infos = malloc(sizeof(section_info) * num_sections);
+    tc48_half* string_offsets = malloc(sizeof(tc48_half) * num_strings);
+    section_info* section_infos = num_sections > 0
+        ? malloc(sizeof(section_info) * num_sections)
+        : NULL;
+    if ((num_strings > 0 && !string_offsets) || (num_sections > 0 && !section_infos)) {
+        free(string_offsets);
+        free(section_infos);
+        return false;
+    }
 
     tc48_half string_table_size = 0;
     for (size_t i = 0; i < num_strings; ++i) {
@@ -162,7 +178,10 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     for (size_t i = 0; i < num_symbols; ++i) {
         size_t orig_idx = sorted_indices[i];
         push_half(out, string_offsets[bldr->symbols.begin[orig_idx].name_idx]);
-        push_half(out, bldr->symbols.begin[orig_idx].section_idx);
+        tc48_half sec_idx = bldr->symbols.begin[orig_idx].section_idx < num_sections
+            ? (tc48_half)bldr->symbols.begin[orig_idx].section_idx
+            : TOBJ_SECTION_UNDEF;
+        push_half(out, sec_idx);
         push_half(out, bldr->symbols.begin[orig_idx].offset);
         push_half(out, bldr->symbols.begin[orig_idx].size);
         push_tryte(out, (tc48_tryte)bldr->symbols.begin[orig_idx].binding);

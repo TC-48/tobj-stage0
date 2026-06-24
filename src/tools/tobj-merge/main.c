@@ -1,42 +1,30 @@
-// NOTE: this is a simplified version for testing
-
 #include <argparse/argparse.h>
 #include <toolcommon/output.h>
 
-#include <tobj/link.h>
 #include <tobj/merge.h>
 #include <tc48/util.h>
 #include <tc48/mem.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdbool.h>
 
 static const char *const usages[] = {
-    "tobj-link [options...] input.obj.t48b [input2.obj.t48b ...]",
+    "tobj-merge [options...] input.obj.t48b [input2.obj.t48b ...]",
     NULL,
 };
 
-int tool_show_error_as_fn(const char* fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    tool_output_valist(TOOL_OUTPUT_ERROR, fmt, ap);
-    va_end(ap);
-    return 0; // this is ignored anyway
-}
-
 int main(int argc, const char* argv[]) {
-    const char* output_path = "raw.t48b";
+    const char* output_path = "merged.t48b";
     struct argparse_option options[] = {
         OPT_HELP(),
-        OPT_STRING('o', "output", &output_path, "path to the output executable", NULL, 0, 0),
+        OPT_STRING('o', "output", &output_path, "path to the output merged object", NULL, 0, 0),
         OPT_END(),
     };
 
     struct argparse argparse;
     argparse_init(&argparse, options, usages, 0);
     argparse_describe(&argparse,
-        "link one or more tobj object files into a raw TC-48 executable",
+        "merge one or more tobj object files into a single ternary object",
         "github: https://github.com/TC-48/tobj-stage0/tree/main"
     );
     argc = argparse_parse(&argparse, argc, argv);
@@ -70,28 +58,9 @@ int main(int argc, const char* argv[]) {
         params[i] = (tobj_param){ .data = objects[i] };
     }
 
-    tc48_memory* obj_to_link = NULL;
-    bool needs_free = false;
-    if (argc > 1) {
-        obj_to_link = tobj_merge(params, (tc48_half)argc);
-        if (!obj_to_link) {
-            tool_show_error("failed to merge object files");
-            return 1;
-        }
-        needs_free = true;
-    } else {
-        obj_to_link = objects[0];
-    }
-
-    tc48_memory* exe = NULL;
-    tobj_link_result res = tobj_to_raw_exe(
-            (tobj_param){ .data = obj_to_link, }, &exe);
-
-    if (res.code != TOBJ_LINK_SUCCESS) {
-        tobj_print_link_error(res, &tool_show_error_as_fn);
-        if (needs_free) {
-            tc48_mem_free(obj_to_link);
-        }
+    tc48_memory* merged = tobj_merge(params, (tc48_half)argc);
+    if (!merged) {
+        tool_show_error("failed to merge object files");
         for (int i = 0; i < argc; ++i) {
             tc48_mem_free(objects[i]);
         }
@@ -100,16 +69,13 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    tc48_mem_save(exe, output_path);
-    tool_show_info("successfully linked to %s", output_path);
+    tc48_mem_save(merged, output_path);
+    tool_show_info("successfully merged to %s", output_path);
 
-    tc48_mem_free(exe);
-    if (needs_free) tc48_mem_free(obj_to_link);
-
+    tc48_mem_free(merged);
     for (int i = 0; i < argc; ++i) {
         tc48_mem_free(objects[i]);
     }
-
     free(objects);
     free(params);
     return 0;

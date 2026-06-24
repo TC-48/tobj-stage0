@@ -7,13 +7,11 @@
 #define e(CODE, ...) \
     ((tobj_link_result){ .code = (CODE), .details = { __VA_ARGS__ } })
 
-tobj_link_result tobj_to_raw_exe(const tc48_memory* object, const tobj_header* stuff, tc48_memory** out) {
+tobj_link_result tobj_to_raw_exe(tobj_param obj, tc48_memory** out) {
     tobj_header header;
-    if (stuff == NULL) {
-        if (!tobj_parse_header(object, 0, &header)) {
-            return e(TOBJ_LINK_BAD_HEADER);
-        }
-    } else header = *stuff;
+    if (!tobj_param_header(obj, &header)) {
+        return e(TOBJ_LINK_BAD_HEADER);
+    }
 
     if (header.magic != TOBJ_MAGIC) {
         return e(TOBJ_LINK_BAD_MAGIC, .magic = header.magic);
@@ -36,14 +34,14 @@ tobj_link_result tobj_to_raw_exe(const tc48_memory* object, const tobj_header* s
    }
 
     for (tc48_half i = 0; i < header.section_count; i++) {
-        if (!tobj_parse_section(object, header.section_table_off + i * TOBJ_SECTION_SIZE_TRYTES, &sections[i])) {
+        if (!tobj_parse_section(obj.data, obj.off + header.section_table_off + i * TOBJ_SECTION_SIZE_TRYTES, &sections[i])) {
             cleanup;
             return e(TOBJ_LINK_BAD_HEADER);
         }
     }
 
     for (tc48_half i = 0; i < header.symbol_count; i++) {
-        if (!tobj_parse_symbol(object, header.symbol_table_off + i * TOBJ_SYMBOL_SIZE_TRYTES, &symbols[i])) {
+        if (!tobj_parse_symbol(obj.data, obj.off + header.symbol_table_off + i * TOBJ_SYMBOL_SIZE_TRYTES, &symbols[i])) {
             return cleanup, e(TOBJ_LINK_BAD_HEADER);
         }
 
@@ -74,13 +72,13 @@ tobj_link_result tobj_to_raw_exe(const tc48_memory* object, const tobj_header* s
     for (tc48_half i = 0; i < header.section_count; i++) {
         if (sections[i].size > 0) {
             memcpy(&raw->data[section_vaddrs[i]],
-                   &object->data[sections[i].off],
+                   &obj.data[obj.off + sections[i].off],
                    sections[i].size * sizeof(tc48_tryte));
         }
     }
 
     for (tc48_half i = 0; i < header.reloc_count; i++) {
-        if (!tobj_parse_reloc(object, header.reloc_table_off + i * TOBJ_RELOC_SIZE_TRYTES, &relocs[i])) {
+        if (!tobj_parse_reloc(obj.data, obj.off + header.reloc_table_off + i * TOBJ_RELOC_SIZE_TRYTES, &relocs[i])) {
             return cleanup2, e(TOBJ_LINK_BAD_HEADER);
         }
 

@@ -53,7 +53,8 @@ int main(int argc, const char* argv[]) {
     }
 
     tc48_memory* exe = NULL;
-    tobj_link_result res = tobj_to_raw_exe(obj, NULL, &exe);
+    tobj_link_result res = tobj_to_raw_exe(
+            (tobj_param){ .data = obj, }, &exe);
 
     if (res.code != TOBJ_LINK_SUCCESS) {
         tobj_print_link_error(res, &tool_show_error_as_fn);

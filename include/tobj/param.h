@@ -9,7 +9,7 @@
 
 typedef struct tobj_param {
     const tc48_memory* data;
-    const tc48_word    off;
+    tc48_word          off;
     const tobj_header* header; // nullable
 } tobj_param;
 

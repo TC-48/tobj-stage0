@@ -91,6 +91,14 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
         free(string_offsets); free(section_infos); return false;
     }
 
+    size_t* symbol_index_map = malloc(sizeof(size_t) * num_symbols);
+    if (num_symbols > 0 && !symbol_index_map) {
+        free(string_offsets); free(section_infos); free(sorted_indices); return false;
+    }
+    for (size_t i = 0; i < num_symbols; ++i) {
+        symbol_index_map[sorted_indices[i]] = i;
+    }
+
     tc48_half off = TOBJ_HEADER_SIZE_TRYTES;
 
     tc48_half string_table_off = off;
@@ -163,7 +171,7 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     for (size_t i = 0; i < num_relocs; ++i) {
         push_half(out, bldr->relocs.begin[i].section_idx);
         push_half(out, bldr->relocs.begin[i].offset);
-        push_half(out, bldr->relocs.begin[i].symbol_idx);
+        push_half(out, symbol_index_map[bldr->relocs.begin[i].symbol_idx]);
         push_tryte(out, (tc48_tryte)bldr->relocs.begin[i].type);
     }
 
@@ -179,6 +187,7 @@ bool the_actual_stuff(tobj_builder* bldr, tobj_trytes* out, tobj_header* out_hea
     free(string_offsets);
     free(section_infos);
     free(sorted_indices);
+    free(symbol_index_map);
     return true;
 }
 

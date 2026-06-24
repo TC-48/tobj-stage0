@@ -56,7 +56,7 @@ typedef struct tobj_header_symbol {
 // NOTE: represented as a tryte
 typedef enum tobj_reloc_type {
     TOBJ_RELOC_ABS, ///< absolute address
-    TOBJ_RELOC_REL, ///< relative to RIP
+    TOBJ_RELOC_REL, ///< relative to patch address
 } tobj_reloc_type;
 
 #define TOBJ_RELOC_SIZE_TRYTES (3*TC48_HALF_TRYTES + 1)

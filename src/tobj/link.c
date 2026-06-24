@@ -72,7 +72,7 @@ tobj_link_result tobj_to_raw_exe(tobj_param obj, tc48_memory** out) {
     for (tc48_half i = 0; i < header.section_count; i++) {
         if (sections[i].size > 0) {
             memcpy(&raw->data[section_vaddrs[i]],
-                   &obj.data[obj.off + sections[i].off],
+                   &obj.data->data[obj.off + sections[i].off],
                    sections[i].size * sizeof(tc48_tryte));
         }
     }

@@ -54,7 +54,7 @@ static void print_tryte_list(const tc48_memory* mem, tc48_word off, tc48_half le
             tool_puts("...");
             break;
         }
-        tool_print("%u", (unsigned)tc48_mem_load6(mem, off + i));
+        tool_print("%llu", (unsigned long long)tc48_mem_load6(mem, off + i));
     }
     tool_putc(')');
 }
@@ -81,14 +81,14 @@ static void print_strings(const tc48_memory* mem) {
     tc48_word pos = header.string_table_off;
     for (tc48_half i = 0; i < header.string_count; ++i) {
         if (pos + TC48_HALF_TRYTES > mem->size) {
-            tool_show_error("string table truncated at index %u", (unsigned)i);
+            tool_show_error("string table truncated at index %llu", (unsigned long long)i);
             return;
         }
 
         tc48_half len = tc48_mem_load24(mem, pos);
         tc48_word chars_off = pos + TC48_HALF_TRYTES;
 
-        tool_print("  [%u] off=%u len=%u ", (unsigned)i, (unsigned)pos, (unsigned)len);
+        tool_print("  [%llu] off=%llu len=%llu ", (unsigned long long)i, (unsigned long long)pos, (unsigned long long)len);
         print_tscs_string(mem, pos);
         tool_putc(' ');
         print_tryte_list(mem, chars_off, len);
@@ -110,11 +110,11 @@ static void print_sections(const tc48_memory* mem) {
     for (tc48_half i = 0; i < header.section_count; ++i) {
         tobj_header_section section;
         if (!tobj_parse_section(mem, table_pos, &section)) {
-            tool_show_error("failed to parse section %u", (unsigned)i);
+            tool_show_error("failed to parse section %llu", (unsigned long long)i);
             return;
         }
 
-        tool_print("  [%u] name=", (unsigned)i);
+        tool_print("  [%llu] name=", (unsigned long long)i);
         print_tscs_string(mem, header.string_table_off + section.name_off);
         tool_print(" off=%lu size=%lu align=%lu sym-start=%lu sym-count=%lu\n",
             (unsigned long)section.off,
@@ -144,16 +144,16 @@ static void print_symbols(const tc48_memory* mem) {
     for (tc48_half i = 0; i < header.symbol_count; ++i) {
         tobj_header_symbol sym;
         if (!tobj_parse_symbol(mem, table_pos, &sym)) {
-            tool_show_error("failed to parse symbol %u", (unsigned)i);
+            tool_show_error("failed to parse symbol %llu", (unsigned long long)i);
             return;
         }
 
-        tool_print("  [%u] name=", (unsigned)i);
+        tool_print("  [%llu] name=", (unsigned long long)i);
         print_tscs_string(mem, header.string_table_off + sym.name_off);
-        tool_print(" section=%u off=%u size=%u binding=%s\n",
-            (unsigned)sym.section_idx,
-            (unsigned)sym.off,
-            (unsigned)sym.size,
+        tool_print(" section=%llu off=%llu size=%llu binding=%s\n",
+            (unsigned long long)sym.section_idx,
+            (unsigned long long)sym.off,
+            (unsigned long long)sym.size,
             tobj_binding_to_str((tobj_binding)sym.binding, true)
         );
 
@@ -173,11 +173,11 @@ static void print_relocs(const tc48_memory* mem) {
     for (tc48_half i = 0; i < header.reloc_count; ++i) {
         tobj_reloc reloc;
         if (!tobj_parse_reloc(mem, table_pos, &reloc)) {
-            tool_show_error("failed to parse reloc %u", (unsigned)i);
+            tool_show_error("failed to parse reloc %llu", (unsigned long long)i);
             return;
         }
 
-        tool_print("  [%u] section=%lu offset=%lu sym=%lu type=%s\n", (unsigned)i,
+        tool_print("  [%llu] section=%lu offset=%lu sym=%lu type=%s\n", (unsigned long long)i,
             (unsigned long)reloc.section_idx,
             (unsigned long)reloc.offset,
             (unsigned long)reloc.sym_idx,
